@@ -10,6 +10,9 @@ import notFoundHandler from './middleware/notFound.middleware.js'
 import errorHandler from './middleware/error.middleware.js'
 
 import adminAuthRoutes from './routes/admin-auth.routes.js'
+import adminDashboardRoutes from './routes/admin-dashboard.routes.js'
+import adminThemeRoutes from './routes/admin-theme.routes.js'
+import publicThemeRoutes from './routes/public-theme.routes.js'
 
 const app = express()
 
@@ -74,6 +77,24 @@ app.get('/api/health', (req, res) => {
 // -----------------------------------------------------
 
 app.use('/api/v1/admin/auth', adminAuthRoutes)
+
+// -----------------------------------------------------
+// 7.1 Admin Dashboard Routes
+// -----------------------------------------------------
+
+app.use('/api/v1/admin/dashboard', adminDashboardRoutes)
+
+// -----------------------------------------------------
+// 7.2 Admin Theme Routes
+// -----------------------------------------------------
+
+app.use('/api/v1/admin/themes', adminThemeRoutes)
+
+// -----------------------------------------------------
+// 7.3 Public Theme Routes
+// -----------------------------------------------------
+
+app.use('/api/v1/themes', publicThemeRoutes)
 
 // -----------------------------------------------------
 // 8. Not Found Middleware
