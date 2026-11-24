@@ -2,16 +2,22 @@ import { env } from '../config/env.js'
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
+const ADMIN_LOGIN_PATH = '/api/v1/admin/auth/login'
+
 function csrfProtection(req, res, next) {
-  // Safe methods do not modify application state.
   if (SAFE_METHODS.has(req.method)) {
     return next()
   }
 
-  // Login does not depend on an existing refresh cookie.
-  const hasRefreshCookie = Boolean(req.cookies?.['__Secure-jki_refresh'])
+  const hasRefreshCookie = Boolean(
+    req.cookies?.['__Secure-jki_refresh'],
+  )
 
-  if (!hasRefreshCookie) {
+  const isAdminLogin =
+    req.method === 'POST' &&
+    req.path === ADMIN_LOGIN_PATH
+
+  if (!hasRefreshCookie && !isAdminLogin) {
     return next()
   }
 

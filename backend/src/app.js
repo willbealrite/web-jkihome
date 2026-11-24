@@ -4,9 +4,12 @@ import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
 
 import { env } from './config/env.js'
+
 import csrfProtection from './middleware/csrf.middleware.js'
 import notFoundHandler from './middleware/notFound.middleware.js'
 import errorHandler from './middleware/error.middleware.js'
+
+import adminAuthRoutes from './routes/admin-auth.routes.js'
 
 const app = express()
 
@@ -67,13 +70,19 @@ app.get('/api/health', (req, res) => {
 })
 
 // -----------------------------------------------------
-// 7. Not Found Middleware
+// 7. Admin Authentication Routes
+// -----------------------------------------------------
+
+app.use('/api/v1/admin/auth', adminAuthRoutes)
+
+// -----------------------------------------------------
+// 8. Not Found Middleware
 // -----------------------------------------------------
 
 app.use(notFoundHandler)
 
 // -----------------------------------------------------
-// 8. Centralized Error Handler
+// 9. Centralized Error Handler
 // -----------------------------------------------------
 
 app.use(errorHandler)
