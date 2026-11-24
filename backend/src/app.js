@@ -2,6 +2,8 @@ import './config/env.js'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
+import notFoundHandler from './middleware/notFound.middleware.js'
+import errorHandler from './middleware/error.middleware.js'
 
 const app = express()
 
@@ -28,5 +30,11 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
   })
 })
+
+// Not Found middleware
+app.use(notFoundHandler)
+
+// Centralized Error Handling middleware
+app.use(errorHandler)
 
 export default app
