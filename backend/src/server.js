@@ -5,54 +5,91 @@ import { startThemePublisher } from './jobs/theme-publisher.job.js'
 const PORT = Number(process.env.PORT) || 3000
 
 async function startServer() {
+  let server
+  let stopThemePublisher = () => {}
+  let isShuttingDown = false
+
+  async function shutdown(signal, exitCode = 0) {
+    if (isShuttingDown) return
+
+    isShuttingDown = true
+
+    console.log(`${signal} received. Shutting down server...`)
+
+    stopThemePublisher()
+
+    if (server) {
+      server.close(async () => {
+        try {
+          await pool.end()
+          console.log('HTTP server and database connections closed.')
+          process.exit(exitCode)
+        } catch (error) {
+          console.error('Database shutdown error:', error.message)
+          process.exit(1)
+        }
+      })
+    } else {
+      try {
+        await pool.end()
+      } catch (error) {
+        console.error('Database shutdown error:', error.message)
+        exitCode = 1
+      }
+
+      process.exit(exitCode)
+    }
+  }
+
   try {
-    // Verify database connection before starting the server.
+    // ==================================================
+    // 1. Verify Database Connection
+    // ==================================================
+
     await pool.query('SELECT 1')
 
-    const server = app.listen(PORT, () => {
+    // ==================================================
+    // 2. Start HTTP Server
+    // ==================================================
+
+    server = app.listen(PORT, () => {
       console.log(`JKI Home Church API running on port ${PORT}`)
       console.log(`Environment: ${process.env.NODE_ENV}`)
     })
 
-    // Start automatic theme publication.
-    const stopThemePublisher = startThemePublisher()
+    // ==================================================
+    // 3. Start Automatic Content Publisher
+    // Annual Themes, Monthly Themes & Daily Devotionals
+    // ==================================================
 
-    // Handle unexpected server errors.
+    stopThemePublisher = startThemePublisher()
+
+    // ==================================================
+    // 4. Handle HTTP Server Errors
+    // ==================================================
+
     server.on('error', async (error) => {
       console.error('HTTP server error:', error.message)
-
-      stopThemePublisher()
-      await pool.end()
-
-      process.exit(1)
+      await shutdown('HTTP_SERVER_ERROR', 1)
     })
 
-    // Graceful shutdown.
-    let isShuttingDown = false
+    // ==================================================
+    // 5. Graceful Shutdown
+    // ==================================================
 
-    const shutdown = async (signal) => {
-      if (isShuttingDown) return
-
-      isShuttingDown = true
-
-      console.log(`${signal} received. Shutting down server...`)
-
-      // Stop the scheduler before closing database connections.
-      stopThemePublisher()
-
-      server.close(async () => {
-        await pool.end()
-
-        console.log('HTTP server and database connections closed.')
-        process.exit(0)
-      })
-    }
-
-    process.on('SIGINT', shutdown)
-    process.on('SIGTERM', shutdown)
+    process.on('SIGINT', () => shutdown('SIGINT'))
+    process.on('SIGTERM', () => shutdown('SIGTERM'))
   } catch (error) {
     console.error('Failed to start server:', error.message)
-    await pool.end()
+
+    stopThemePublisher()
+
+    try {
+      await pool.end()
+    } catch (shutdownError) {
+      console.error('Database shutdown error:', shutdownError.message)
+    }
+
     process.exit(1)
   }
 }

@@ -3,6 +3,12 @@ import pool from '../config/database.js'
 const PUBLISH_INTERVAL_MS = 60 * 1000
 const BATCH_LIMIT = 50
 
+
+// -----------------------------------------------------
+// 1. Publish Scheduled Themes
+// Annual Theme & Monthly Theme
+// -----------------------------------------------------
+
 async function publishDueThemes(
   client,
   table,
@@ -82,6 +88,93 @@ async function publishDueThemes(
   return result.rowCount
 }
 
+
+// -----------------------------------------------------
+// 2. Publish Scheduled Devotionals
+// Daily Devotional
+// -----------------------------------------------------
+
+async function publishDueDevotionals(client) {
+  const result = await client.query(
+    `
+      WITH due_devotionals AS (
+        SELECT
+          devotionals.id,
+          devotionals.scheduled_at
+        FROM public.devotionals AS devotionals
+        WHERE devotionals.status = 'SCHEDULED'
+          AND devotionals.scheduled_at <= NOW()
+        ORDER BY devotionals.scheduled_at ASC
+        LIMIT $1
+        FOR UPDATE OF devotionals SKIP LOCKED
+      ),
+      published_devotionals AS (
+        UPDATE public.devotionals AS devotionals
+        SET
+          status = 'PUBLISHED',
+          published_at = NOW(),
+          scheduled_at = NULL
+        FROM due_devotionals
+        WHERE devotionals.id = due_devotionals.id
+        RETURNING
+          devotionals.id,
+          devotionals.title,
+          devotionals.date
+      )
+      SELECT
+        published_devotionals.id,
+        published_devotionals.title,
+        published_devotionals.date,
+        due_devotionals.scheduled_at
+      FROM published_devotionals
+      INNER JOIN due_devotionals
+        ON due_devotionals.id = published_devotionals.id
+    `,
+    [BATCH_LIMIT],
+  )
+
+  for (const devotional of result.rows) {
+    await client.query(
+      `
+        INSERT INTO public.admin_activity_logs (
+          admin_id,
+          action,
+          module,
+          entity_type,
+          entity_id,
+          description,
+          metadata
+        )
+        VALUES (
+          NULL,
+          'DEVOTIONAL_AUTO_PUBLISHED',
+          'DEVOTIONALS',
+          'devotional',
+          $1,
+          'Renungan harian dipublikasikan otomatis oleh scheduler.',
+          $2::jsonb
+        )
+      `,
+      [
+        devotional.id,
+        JSON.stringify({
+          title: devotional.title,
+          date: devotional.date,
+          scheduled_at: devotional.scheduled_at,
+        }),
+      ],
+    )
+  }
+
+  return result.rowCount
+}
+
+
+// -----------------------------------------------------
+// 3. Publish All Scheduled Content
+// Annual Themes, Monthly Themes & Devotionals
+// -----------------------------------------------------
+
 export async function publishScheduledThemes() {
   const client = await pool.connect()
 
@@ -101,13 +194,18 @@ export async function publishScheduledThemes() {
       true,
     )
 
+    const devotionalCount = await publishDueDevotionals(client)
+
     await client.query('COMMIT')
 
-    const total = annualCount + monthlyCount
+    const total =
+      annualCount +
+      monthlyCount +
+      devotionalCount
 
     if (total > 0) {
       console.log(
-        `${total} theme(s) automatically published.`,
+        `${total} scheduled content item(s) automatically published.`,
       )
     }
 
@@ -119,6 +217,12 @@ export async function publishScheduledThemes() {
     client.release()
   }
 }
+
+
+// -----------------------------------------------------
+// 4. Start Theme & Devotional Publisher
+// Runs immediately and every 60 seconds
+// -----------------------------------------------------
 
 export function startThemePublisher() {
   let isRunning = false
@@ -132,7 +236,7 @@ export function startThemePublisher() {
       await publishScheduledThemes()
     } catch (error) {
       console.error(
-        'Theme publisher error:',
+        'Content publisher error:',
         error.message,
       )
     } finally {
