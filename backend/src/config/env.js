@@ -19,6 +19,12 @@ function getRequiredString(name) {
   return value
 }
 
+function getOptionalString(name) {
+  const value = process.env[name]
+
+  return typeof value === 'string' ? value.trim() : ''
+}
+
 function getInteger(name, min, max) {
   const value = getRequiredString(name)
   const parsed = Number(value)
@@ -92,6 +98,13 @@ if (clientOrigin) {
   }
 }
 
+// Cloudinary
+const cloudinary = {
+  cloudName: getOptionalString('CLOUDINARY_CLOUD_NAME'),
+  apiKey: getOptionalString('CLOUDINARY_API_KEY'),
+  apiSecret: getOptionalString('CLOUDINARY_API_SECRET'),
+}
+
 // Stop application when configuration is invalid
 if (errors.length > 0) {
   console.error('[ENVIRONMENT CONFIGURATION ERROR]')
@@ -113,4 +126,5 @@ export const env = Object.freeze({
     refreshSecret,
   }),
   clientOrigin,
+  cloudinary: Object.freeze(cloudinary),
 })

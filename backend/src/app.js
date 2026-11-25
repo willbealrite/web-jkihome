@@ -13,6 +13,7 @@ import adminAuthRoutes from './routes/admin-auth.routes.js'
 import adminDashboardRoutes from './routes/admin-dashboard.routes.js'
 import adminThemeRoutes from './routes/admin-theme.routes.js'
 import adminDevotionalRoutes from './routes/admin-devotional.routes.js'
+import adminMediaRoutes from './routes/media.routes.js'
 import publicThemeRoutes from './routes/public-theme.routes.js'
 import devotionalRoutes from './routes/devotional.routes.js'
 
@@ -92,22 +93,26 @@ app.use('/api/v1/admin/dashboard', adminDashboardRoutes)
 
 app.use('/api/v1/admin/themes', adminThemeRoutes)
 
-
 // -----------------------------------------------------
 // 7.3 Admin Devotional Routes
 // -----------------------------------------------------
 
 app.use('/api/v1/admin/devotionals', adminDevotionalRoutes)
 
+// -----------------------------------------------------
+// 7.4 Admin Media Routes
+// -----------------------------------------------------
+
+app.use('/api/v1/admin/media', adminMediaRoutes)
 
 // -----------------------------------------------------
-// 7.4 Public Theme Routes
+// 7.5 Public Theme Routes
 // -----------------------------------------------------
 
 app.use('/api/v1/themes', publicThemeRoutes)
 
 // -----------------------------------------------------
-// 7.5 Public Devotional Routes
+// 7.6 Public Devotional Routes
 // -----------------------------------------------------
 
 app.use('/api/v1/devotionals', devotionalRoutes)
