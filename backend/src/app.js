@@ -16,6 +16,7 @@ import adminDevotionalRoutes from './routes/admin-devotional.routes.js'
 import adminMediaRoutes from './routes/media.routes.js'
 import publicThemeRoutes from './routes/public-theme.routes.js'
 import devotionalRoutes from './routes/devotional.routes.js'
+import speakerFlyerRoutes from './routes/speaker-flyer.routes.js'
 
 const app = express()
 
@@ -116,6 +117,12 @@ app.use('/api/v1/themes', publicThemeRoutes)
 // -----------------------------------------------------
 
 app.use('/api/v1/devotionals', devotionalRoutes)
+
+// -----------------------------------------------------
+// 7.7 Speaker Flyer Routes
+// -----------------------------------------------------
+
+app.use('/api/v1/speaker-flyers', speakerFlyerRoutes)
 
 // -----------------------------------------------------
 // 8. Not Found Middleware
