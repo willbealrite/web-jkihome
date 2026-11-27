@@ -1,12 +1,14 @@
 import app from './app.js'
 import pool from './config/database.js'
 import { startThemePublisher } from './jobs/theme-publisher.job.js'
+import { startMediaDeletionWorker } from './services/media-deletion.service.js'
 
 const PORT = Number(process.env.PORT) || 3000
 
 async function startServer() {
   let server
   let stopThemePublisher = () => {}
+  let stopMediaDeletionWorker = () => {}
   let isShuttingDown = false
 
   async function shutdown(signal, exitCode = 0) {
@@ -17,6 +19,7 @@ async function startServer() {
     console.log(`${signal} received. Shutting down server...`)
 
     stopThemePublisher()
+    stopMediaDeletionWorker()
 
     if (server) {
       server.close(async () => {
@@ -65,7 +68,13 @@ async function startServer() {
     stopThemePublisher = startThemePublisher()
 
     // ==================================================
-    // 4. Handle HTTP Server Errors
+    // 4. Start Media Deletion Worker
+    // ==================================================
+
+    stopMediaDeletionWorker = startMediaDeletionWorker()
+
+    // ==================================================
+    // 5. Handle HTTP Server Errors
     // ==================================================
 
     server.on('error', async (error) => {
@@ -74,7 +83,7 @@ async function startServer() {
     })
 
     // ==================================================
-    // 5. Graceful Shutdown
+    // 6. Graceful Shutdown
     // ==================================================
 
     process.on('SIGINT', () => shutdown('SIGINT'))
@@ -83,6 +92,7 @@ async function startServer() {
     console.error('Failed to start server:', error.message)
 
     stopThemePublisher()
+    stopMediaDeletionWorker()
 
     try {
       await pool.end()

@@ -259,7 +259,129 @@ async function uploadMedia({
 }
 
 // -----------------------------------------------------
-// 14. Export Service
+// 14. Media Listing
 // -----------------------------------------------------
 
-export { uploadMedia }
+async function getMediaList({
+  page,
+  limit,
+  search,
+  status,
+  resource_type,
+  sort_by,
+  order,
+}) {
+  const conditions = []
+  const values = []
+
+  // ---------------------------------------------------
+  // 15. Build Filtering Conditions
+  // ---------------------------------------------------
+
+  if (search) {
+    values.push(`%${search}%`)
+
+    conditions.push(
+      `(file_name ILIKE $${values.length}
+        OR alt_text ILIKE $${values.length})`,
+    )
+  }
+
+  if (status) {
+    values.push(status)
+    conditions.push(`status = $${values.length}`)
+  }
+
+  if (resource_type) {
+    values.push(resource_type)
+    conditions.push(`resource_type = $${values.length}`)
+  }
+
+  const whereClause = conditions.length
+    ? `WHERE ${conditions.join(' AND ')}`
+    : ''
+
+  // ---------------------------------------------------
+  // 16. Count Total Matching Records
+  // ---------------------------------------------------
+
+  const countResult = await pool.query(
+    `
+      SELECT COUNT(*) AS total_items
+      FROM public.media
+      ${whereClause}
+    `,
+    values,
+  )
+
+  const totalItems = Number(countResult.rows[0].total_items)
+
+  // ---------------------------------------------------
+  // 17. Pagination Calculation
+  // ---------------------------------------------------
+
+  const offset = (page - 1) * limit
+
+  // ---------------------------------------------------
+  // 18. Whitelisted Sorting
+  // ---------------------------------------------------
+
+  const sortColumns = {
+    created_at: 'created_at',
+    file_name: 'file_name',
+    file_size: 'file_size',
+  }
+
+  const sortColumn = sortColumns[sort_by]
+  const sortOrder = order.toUpperCase()
+
+  // ---------------------------------------------------
+  // 19. Retrieve Media Records
+  // ---------------------------------------------------
+
+  const listValues = [...values, limit, offset]
+
+  const mediaResult = await pool.query(
+    `
+      SELECT
+        id,
+        file_name,
+        resource_type,
+        mime_type,
+        format,
+        asset_url,
+        width,
+        height,
+        file_size,
+        alt_text,
+        status,
+        created_at
+      FROM public.media
+      ${whereClause}
+      ORDER BY ${sortColumn} ${sortOrder}, id DESC
+      LIMIT $${listValues.length - 1}
+      OFFSET $${listValues.length}
+    `,
+    listValues,
+  )
+
+  // ---------------------------------------------------
+  // 20. Return Media Listing
+  // ---------------------------------------------------
+
+  return {
+    items: mediaResult.rows,
+    pagination: {
+      page,
+      limit,
+      total_items: totalItems,
+      total_pages: Math.ceil(totalItems / limit),
+    },
+  }
+}
+
+// -----------------------------------------------------
+// 21. Export Service
+// -----------------------------------------------------
+
+export { uploadMedia, getMediaList }
