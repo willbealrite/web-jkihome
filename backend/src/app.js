@@ -18,6 +18,11 @@ import publicThemeRoutes from './routes/public-theme.routes.js'
 import devotionalRoutes from './routes/devotional.routes.js'
 import speakerFlyerRoutes from './routes/speaker-flyer.routes.js'
 
+import {
+  publicRouter as serviceScheduleRoutes,
+  adminRouter as adminServiceScheduleRoutes,
+} from './routes/service-schedule.routes.js'
+
 const app = express()
 
 // -----------------------------------------------------
@@ -123,6 +128,18 @@ app.use('/api/v1/devotionals', devotionalRoutes)
 // -----------------------------------------------------
 
 app.use('/api/v1/speaker-flyers', speakerFlyerRoutes)
+
+// -----------------------------------------------------
+// 7.8 Public Service Schedule Routes
+// -----------------------------------------------------
+
+app.use('/api/v1/service-schedules', serviceScheduleRoutes)
+
+// -----------------------------------------------------
+// 7.9 Admin Service Schedule Routes
+// -----------------------------------------------------
+
+app.use('/api/v1/admin/service-schedules', adminServiceScheduleRoutes)
 
 // -----------------------------------------------------
 // 8. Not Found Middleware
