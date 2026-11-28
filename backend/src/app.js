@@ -23,6 +23,11 @@ import {
   adminRouter as adminServiceScheduleRoutes,
 } from './routes/service-schedule.routes.js'
 
+import {
+  publicRouter as sermonsRoutes,
+  adminRouter as adminSermonsRoutes,
+} from './routes/sermons.routes.js'
+
 const app = express()
 
 // -----------------------------------------------------
@@ -140,6 +145,18 @@ app.use('/api/v1/service-schedules', serviceScheduleRoutes)
 // -----------------------------------------------------
 
 app.use('/api/v1/admin/service-schedules', adminServiceScheduleRoutes)
+
+// -----------------------------------------------------
+// 7.10 Public Sermons Routes
+// -----------------------------------------------------
+
+app.use('/api/v1/sermons', sermonsRoutes)
+
+// -----------------------------------------------------
+// 7.11 Admin Sermons Routes
+// -----------------------------------------------------
+
+app.use('/api/v1/admin/sermons', adminSermonsRoutes)
 
 // -----------------------------------------------------
 // 8. Not Found Middleware
